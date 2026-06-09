@@ -1,0 +1,701 @@
+openapi: 3.0.3
+info:
+  title: Payment API
+  description: REST API for payment processing — fund transfers, bill payments, and parking payments.
+  version: 1.0.0
+  contact:
+    name: Nikola Maravic
+    url: https://github.com/nmaravic90
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+  - url: https://api.yourdomain.com
+    description: Production server
+
+tags:
+  - name: Payments
+    description: Payment operations — transfer, bill, parking, QR code
+  - name: Transactions
+    description: Transaction queries — details and history
+
+security:
+  - bearerAuth: []
+
+paths:
+
+  /api/v1/payments/transfer:
+    post:
+      tags:
+        - Payments
+      summary: Transfer funds between users
+      description: Transfers a specified amount from one user account to another.
+      operationId: transferFunds
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+            example:
+              senderId: "user_001"
+              receiverId: "user_002"
+              amount: 150.00
+              currency: "RSD"
+              description: "Rent payment for June"
+      responses:
+        '201':
+          description: Transaction successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '400':
+          description: Invalid request (negative amount, sender equals receiver, missing fields)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing or invalid JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Sender or receiver not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Duplicate request — a transaction with this Idempotency-Key already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Insufficient funds
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/payments/bill:
+    post:
+      tags:
+        - Payments
+      summary: Pay a utility bill
+      description: Pays a utility bill (electricity, water, gas, internet, etc.) on behalf of a user.
+      operationId: payBill
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BillPaymentRequest'
+            example:
+              userId: "user_001"
+              billCode: "123456789"
+              amount: 3500.00
+              currency: "RSD"
+      responses:
+        '201':
+          description: Bill successfully paid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '400':
+          description: Invalid bill code or amount
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing or invalid JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Duplicate request — a transaction with this Idempotency-Key already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Insufficient funds
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/payments/parking:
+    post:
+      tags:
+        - Payments
+      summary: Pay for parking
+      description: Pays for parking in a specified zone for a given duration.
+      operationId: payParking
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParkingPaymentRequest'
+            example:
+              userId: "user_001"
+              licensePlate: "BG123AB"
+              zone: "1"
+              durationMinutes: 60
+              currency: "RSD"
+      responses:
+        '201':
+          description: Parking successfully paid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '400':
+          description: Invalid zone or duration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing or invalid JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Duplicate request — a transaction with this Idempotency-Key already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Insufficient funds
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/payments/qr-code:
+    post:
+      tags:
+        - Payments
+      summary: Pay via QR code
+      description: Processes a payment by scanning a QR code. The QR code payload contains the recipient and amount information.
+      operationId: payQrCode
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QrCodePaymentRequest'
+            example:
+              userId: "user_001"
+              qrPayload: "00020101021226370016RS.NBS.IPS0111900000000010212Uplata123456304A1B2"
+              currency: "RSD"
+      responses:
+        '201':
+          description: QR code payment successfully processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '400':
+          description: Invalid or expired QR code payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing or invalid JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Duplicate request — a transaction with this Idempotency-Key already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Insufficient funds
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/transactions/{transactionId}:
+    get:
+      tags:
+        - Transactions
+      summary: Get transaction details
+      description: Returns details of a single transaction by its ID.
+      operationId: getTransaction
+      parameters:
+        - name: transactionId
+          in: path
+          required: true
+          description: Unique transaction identifier
+          schema:
+            type: string
+            example: "txn_abc123"
+      responses:
+        '200':
+          description: Transaction found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionDetailResponse'
+        '401':
+          description: Missing or invalid JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/transactions/history/{userId}:
+    get:
+      tags:
+        - Transactions
+      summary: Get transaction history for a user
+      description: Returns a paginated list of transactions for the specified user, with optional filtering by transaction type.
+      operationId: getTransactionHistory
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: Unique user identifier
+          schema:
+            type: string
+            example: "user_001"
+        - name: page
+          in: query
+          required: false
+          description: Page number (zero-based)
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: size
+          in: query
+          required: false
+          description: Number of results per page
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 100
+        - name: type
+          in: query
+          required: false
+          description: Filter by transaction type
+          schema:
+            $ref: '#/components/schemas/PaymentType'
+      responses:
+        '200':
+          description: Paginated list of transactions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionHistoryResponse'
+        '401':
+          description: Missing or invalid JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        JWT token obtained from Keycloak.
+        Include in the Authorization header as: Bearer <token>
+
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: >
+        Unique key (UUID v4) generated by the client to prevent duplicate payments.
+        If the same key is received more than once, the server returns the cached
+        response without re-executing the operation.
+      schema:
+        type: string
+        format: uuid
+        example: "550e8400-e29b-41d4-a716-446655440000"
+
+  schemas:
+
+    TransferRequest:
+      type: object
+      required:
+        - senderId
+        - receiverId
+        - amount
+        - currency
+      properties:
+        senderId:
+          type: string
+          description: ID of the user sending funds
+          example: "user_001"
+        receiverId:
+          type: string
+          description: ID of the user receiving funds
+          example: "user_002"
+        amount:
+          type: number
+          format: double
+          description: Amount to transfer (must be greater than 0)
+          minimum: 0.01
+          example: 150.00
+        currency:
+          type: string
+          description: ISO 4217 currency code
+          example: "RSD"
+          minLength: 3
+          maxLength: 3
+        description:
+          type: string
+          description: Optional note for the transfer
+          example: "Rent payment for June"
+          maxLength: 255
+
+    BillPaymentRequest:
+      type: object
+      required:
+        - userId
+        - billCode
+        - amount
+        - currency
+      properties:
+        userId:
+          type: string
+          description: ID of the user paying the bill
+          example: "user_001"
+        billCode:
+          type: string
+          description: Bill reference number
+          example: "123456789"
+        amount:
+          type: number
+          format: double
+          description: Bill amount (must be greater than 0)
+          minimum: 0.01
+          example: 3500.00
+        currency:
+          type: string
+          description: ISO 4217 currency code
+          example: "RSD"
+          minLength: 3
+          maxLength: 3
+
+    ParkingPaymentRequest:
+      type: object
+      required:
+        - userId
+        - licensePlate
+        - zone
+        - durationMinutes
+        - currency
+      properties:
+        userId:
+          type: string
+          description: ID of the user paying for parking
+          example: "user_001"
+        licensePlate:
+          type: string
+          description: Vehicle license plate number
+          example: "BG123AB"
+        zone:
+          type: string
+          description: Parking zone identifier
+          example: "1"
+        durationMinutes:
+          type: integer
+          description: Parking duration in minutes (must be greater than 0)
+          minimum: 1
+          example: 60
+        currency:
+          type: string
+          description: ISO 4217 currency code
+          example: "RSD"
+          minLength: 3
+          maxLength: 3
+
+    QrCodePaymentRequest:
+      type: object
+      required:
+        - userId
+        - qrPayload
+        - amount
+        - currency
+      properties:
+        userId:
+          type: string
+          description: ID of the user making the payment
+          example: "user_001"
+        qrPayload:
+          type: string
+          description: Raw QR code string (Swiss QR or NBS IPS QR standard)
+          example: "00020101021226370016RS.NBS.IPS0111900000000010212Uplata123456304A1B2"
+        amount:
+          type: number
+          format: double
+          description: Payment amount (must be greater than 0)
+          minimum: 0.01
+          example: 150.00
+        currency:
+          type: string
+          description: ISO 4217 currency code
+          example: "RSD"
+          minLength: 3
+          maxLength: 3
+
+    TransactionResponse:
+      type: object
+      properties:
+        transactionId:
+          type: string
+          example: "txn_abc123"
+        status:
+          $ref: '#/components/schemas/TransactionStatus'
+        amount:
+          type: number
+          format: double
+          example: 150.00
+        currency:
+          type: string
+          example: "RSD"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2025-06-04T10:30:00Z"
+        licensePlate:
+          type: string
+          description: Populated for PARKING type only — hidden when null
+          example: "BG123AB"
+        zone:
+          type: string
+          description: Populated for PARKING type only — hidden when null
+          example: "1"
+        validUntil:
+          type: string
+          format: date-time
+          description: Populated for PARKING type only — hidden when null
+          example: "2025-06-04T11:30:00Z"
+
+
+    TransactionDetailResponse:
+      type: object
+      properties:
+        transactionId:
+          type: string
+          example: "txn_abc123"
+        type:
+          $ref: '#/components/schemas/PaymentType'
+        status:
+          $ref: '#/components/schemas/TransactionStatus'
+        amount:
+          type: number
+          format: double
+          example: 150.00
+        currency:
+          type: string
+          example: "RSD"
+        senderId:
+          type: string
+          description: Populated for TRANSFER type only
+          example: "user_001"
+        receiverId:
+          type: string
+          description: Populated for TRANSFER type only
+          example: "user_002"
+        billCode:
+          type: string
+          description: Populated for BILL type only
+          example: "123456789"
+        licensePlate:
+          type: string
+          description: Populated for PARKING type only
+          example: "BG123AB"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2025-06-04T10:30:00Z"
+
+    TransactionHistoryResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionDetailResponse'
+        totalElements:
+          type: integer
+          example: 42
+        totalPages:
+          type: integer
+          example: 5
+        currentPage:
+          type: integer
+          example: 0
+        pageSize:
+          type: integer
+          example: 10
+
+    ErrorResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          example: "2025-06-04T10:30:00Z"
+        status:
+          type: integer
+          example: 400
+        error:
+          type: string
+          example: "Bad Request"
+        message:
+          type: string
+          example: "Amount must be greater than 0"
+        path:
+          type: string
+          example: "/api/v1/payments/transfer"
+
+    PaymentType:
+      type: string
+      enum:
+        - TRANSFER
+        - BILL
+        - PARKING
+        - QR_CODE
+
+    TransactionStatus:
+      type: string
+      enum:
+        - PENDING
+        - SUCCESS
+        - FAILED
