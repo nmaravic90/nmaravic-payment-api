@@ -75,6 +75,9 @@ public class TransactionMapper {
                 .status(transaction.getStatus())
                 .amount(transaction.getAmount().doubleValue())
                 .currency(transaction.getCurrency())
+                .licensePlate(transaction.getLicensePlate())
+                .zone(transaction.getZone())
+                .validUntil(transaction.getValidUntil())
                 .timestamp(transaction.getCreatedAt());
     }
 
