@@ -1,6 +1,7 @@
 package com.nmaravic.payment.api.mapper;
 
 import com.nmaravic.payment.api.database.entitymodel.Transaction;
+import com.nmaravic.payment.api.kafka.PaymentEvent;
 import com.nmaravic.payment.api.model.*;
 import com.nmaravic.payment.api.util.PaymentAmountUtil;
 import org.springframework.stereotype.Component;
@@ -16,7 +17,7 @@ public class TransactionMapper {
         return Transaction.builder()
                 .id(UUID.randomUUID())
                 .type(PaymentType.BILL)
-                .status(TransactionStatus.SUCCESS)
+                .status(TransactionStatus.PENDING)
                 .amount(BigDecimal.valueOf(request.getAmount()))
                 .currency(request.getCurrency())
                 .userId(request.getUserId())
@@ -29,7 +30,7 @@ public class TransactionMapper {
         return Transaction.builder()
                 .id(UUID.randomUUID())
                 .type(PaymentType.TRANSFER)
-                .status(TransactionStatus.SUCCESS)
+                .status(TransactionStatus.PENDING)
                 .amount(BigDecimal.valueOf(request.getAmount()))
                 .currency(request.getCurrency())
                 .userId(request.getSenderId())
@@ -43,7 +44,7 @@ public class TransactionMapper {
         return Transaction.builder()
                 .id(UUID.randomUUID())
                 .type(PaymentType.PARKING)
-                .status(TransactionStatus.SUCCESS)
+                .status(TransactionStatus.PENDING)
                 .amount(PaymentAmountUtil.calculateParkingAmount(
                         request.getZone(),
                         request.getDurationMinutes()
@@ -61,7 +62,7 @@ public class TransactionMapper {
         return Transaction.builder()
                 .id(UUID.randomUUID())
                 .type(PaymentType.QR_CODE)
-                .status(TransactionStatus.SUCCESS)
+                .status(TransactionStatus.PENDING)
                 .amount(BigDecimal.valueOf(request.getAmount()))
                 .currency(request.getCurrency())
                 .userId(request.getUserId())
@@ -93,5 +94,17 @@ public class TransactionMapper {
                 .billCode(transaction.getBillCode())
                 .licensePlate(transaction.getLicensePlate())
                 .timestamp(transaction.getCreatedAt());
+    }
+
+    public PaymentEvent toEvent(Transaction transaction, PaymentType paymentType) {
+        return PaymentEvent.builder()
+                .transactionId(transaction.getId())
+                .paymentType(paymentType)
+                .status(TransactionStatus.PENDING)
+                .amount(transaction.getAmount())
+                .currency(transaction.getCurrency())
+                .userId(transaction.getUserId())
+                .createdAt(transaction.getCreatedAt())
+                .build();
     }
 }
