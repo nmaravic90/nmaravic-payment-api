@@ -1,6 +1,8 @@
 package com.nmaravic.payment.api.service;
 
+import com.nmaravic.payment.api.database.entitymodel.Transaction;
 import com.nmaravic.payment.api.database.repository.TransactionRepository;
+import com.nmaravic.payment.api.exception.TransactionNotFoundException;
 import com.nmaravic.payment.api.kafka.PaymentEvent;
 import com.nmaravic.payment.api.kafka.PaymentEventProducer;
 import com.nmaravic.payment.api.model.TransactionStatus;
@@ -27,11 +29,25 @@ public class PaymentSimulationService {
     private final PaymentEventProducer paymentEventProducer;
 
     public void simulate(PaymentEvent event) {
+        if (isAlreadyProcessed(event)) {
+            return;
+        }
         log.info("Simulating payment for transactionId: {}", event.getTransactionId());
         simulateDelay();
         TransactionStatus status = processPayment(event);
         updateTransactionStatus(event.getTransactionId(), status);
         paymentEventProducer.sendResultEvent(event, status);
+    }
+
+    private boolean isAlreadyProcessed(PaymentEvent event) {
+        Transaction transaction = transactionRepository.findById(event.getTransactionId())
+                .orElseThrow(() -> new TransactionNotFoundException(String.valueOf(event.getTransactionId())));
+
+        if (transaction.getStatus() != TransactionStatus.PENDING) {
+            log.info("Transaction {} already processed with status {}, skipping", event.getTransactionId(), transaction.getStatus());
+            return true;
+        }
+        return false;
     }
 
     private void simulateDelay() {
@@ -56,10 +72,10 @@ public class PaymentSimulationService {
 
     private void updateTransactionStatus(UUID transactionId, TransactionStatus status) {
         transactionRepository.findById(transactionId)
-                .ifPresent(transaction -> {
+                .ifPresentOrElse(transaction -> {
                     transaction.setStatus(status);
                     transactionRepository.save(transaction);
-                    log.info("Transaction {} updated to {}", transactionId, status);
-                });
+                    log.info("Transaction {} updated to {}", transactionId, status);},
+                        () -> log.warn("Transaction {} not found - cannot update status", transactionId));
     }
 }
