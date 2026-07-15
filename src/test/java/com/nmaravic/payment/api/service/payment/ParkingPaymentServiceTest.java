@@ -67,6 +67,7 @@ class ParkingPaymentServiceTest {
         when(transactionMapper.toEntity(request)).thenReturn(expected);
 
         Transaction result = service.toTransaction(request);
+
         verify(transactionMapper).toEntity(request);
         assertThat(result).isSameAs(expected);
     }

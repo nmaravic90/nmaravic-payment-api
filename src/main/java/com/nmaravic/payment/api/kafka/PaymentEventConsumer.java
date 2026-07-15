@@ -16,7 +16,6 @@ public class PaymentEventConsumer {
     @KafkaListener(topics = "${kafka.topic.in}", groupId = "${spring.kafka.consumer.group-id}")
     public void consume(PaymentEvent event) {
         log.info("Received payment event for transactionId: {}", event.getTransactionId());
-        throw new RuntimeException("Simulated exception");
-//        paymentSimulationService.simulate(event);
+        paymentSimulationService.simulate(event);
     }
 }

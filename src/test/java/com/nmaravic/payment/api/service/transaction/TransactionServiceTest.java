@@ -95,6 +95,7 @@ class TransactionServiceTest {
         when(transactionMapper.toDetailResponse(transaction)).thenReturn(new TransactionDetailResponse().transactionId("txn_1"));
 
         TransactionHistoryResponse response = transactionService.getTransactionHistory(userId, 0, 10, type);
+
         verify(transactionRepository).findByUserIdAndType(eq(userId), eq(type), any(Pageable.class));
         verify(transactionRepository, never()).findByUserId(any(), any());
 
@@ -127,8 +128,9 @@ class TransactionServiceTest {
 
         TransactionHistoryResponse response = transactionService.getTransactionHistory(userId, 0, 10, null);
 
+        verify(transactionMapper, never()).toDetailResponse(any());
+
         assertThat(response.getContent()).isEmpty();
         assertThat(response.getTotalElements()).isZero();
-        verify(transactionMapper, never()).toDetailResponse(any());
     }
 }

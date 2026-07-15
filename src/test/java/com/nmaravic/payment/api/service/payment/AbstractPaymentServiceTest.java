@@ -93,6 +93,7 @@ class AbstractPaymentServiceTest {
         when(idempotencyService.findCachedResponse(key)).thenReturn(Optional.of(cached));
 
         TransactionResponse result = service.process(key, "request");
+
         verify(transactionRepository, never()).save(any());
         verify(paymentEventProducer, never()).sendPaymentEvent(any());
         verify(idempotencyService, never()).saveResponse(any(), any());

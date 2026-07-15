@@ -38,6 +38,7 @@ class BalanceServiceTest {
 
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(captor.capture());
+
         assertThat(captor.getValue().getBalance()).isEqualByComparingTo(new BigDecimal("700.00"));
     }
 
@@ -74,6 +75,7 @@ class BalanceServiceTest {
 
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(captor.capture());
+
         assertThat(captor.getValue().getBalance()).isEqualByComparingTo(BigDecimal.ZERO);
     }
 

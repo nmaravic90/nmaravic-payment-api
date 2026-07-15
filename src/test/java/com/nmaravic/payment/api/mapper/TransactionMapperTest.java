@@ -31,6 +31,7 @@ class TransactionMapperTest {
                 .currency("RSD");
 
         Transaction transaction = mapper.toEntity(request);
+
         assertThat(transaction.getId()).isNotNull();
         assertThat(transaction.getType()).isEqualTo(PaymentType.BILL);
         assertThat(transaction.getStatus()).isEqualTo(TransactionStatus.PENDING);
@@ -50,6 +51,7 @@ class TransactionMapperTest {
                 .currency("RSD");
 
         Transaction transaction = mapper.toEntity(request);
+
         assertThat(transaction.getType()).isEqualTo(PaymentType.TRANSFER);
         assertThat(transaction.getStatus()).isEqualTo(TransactionStatus.PENDING);
         assertThat(transaction.getAmount()).isEqualByComparingTo(BigDecimal.valueOf(150.00));
@@ -69,6 +71,7 @@ class TransactionMapperTest {
                 .currency("RSD");
 
         Transaction transaction = mapper.toEntity(request);
+
         assertThat(transaction.getType()).isEqualTo(PaymentType.PARKING);
         assertThat(transaction.getStatus()).isEqualTo(TransactionStatus.PENDING);
         assertThat(transaction.getLicensePlate()).isEqualTo("BG123AB");
@@ -97,6 +100,7 @@ class TransactionMapperTest {
         Transaction transaction = buildTransaction();
 
         TransactionResponse response = mapper.toResponse(transaction);
+
         assertThat(response.getTransactionId()).isEqualTo(transaction.getId().toString());
         assertThat(response.getStatus()).isEqualTo(transaction.getStatus());
         assertThat(response.getAmount()).isEqualTo(transaction.getAmount().doubleValue());
@@ -110,6 +114,7 @@ class TransactionMapperTest {
         Transaction transaction = buildTransaction();
 
         TransactionDetailResponse response = mapper.toDetailResponse(transaction);
+
         assertThat(response.getTransactionId()).isEqualTo(transaction.getId().toString());
         assertThat(response.getType()).isEqualTo(transaction.getType());
         assertThat(response.getStatus()).isEqualTo(transaction.getStatus());
@@ -122,6 +127,7 @@ class TransactionMapperTest {
         Transaction transaction = buildTransaction();
 
         PaymentEvent event = mapper.toEvent(transaction, PaymentType.TRANSFER);
+
         assertThat(event.getTransactionId()).isEqualTo(transaction.getId());
         assertThat(event.getPaymentType()).isEqualTo(PaymentType.TRANSFER);
         assertThat(event.getStatus()).isEqualTo(TransactionStatus.PENDING);

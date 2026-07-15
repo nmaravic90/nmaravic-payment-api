@@ -41,9 +41,9 @@ class IdempotencyServiceTest {
         when(idempotencyRecordMapper.toResponse(idempotencyRecord)).thenReturn(expected);
 
         Optional<TransactionResponse> result = idempotencyService.findCachedResponse(key);
+        TransactionResponse actual = result.orElseThrow();
 
         assertThat(result).isPresent();
-        TransactionResponse actual = result.orElseThrow();
         assertThat(actual.getTransactionId()).isEqualTo("txn_123");
     }
 
@@ -68,6 +68,7 @@ class IdempotencyServiceTest {
         when(idempotencyRecordMapper.toEntity(key, response)).thenReturn(idempotencyRecord);
 
         idempotencyService.saveResponse(key, response);
+
         verify(idempotencyRecordMapper).toEntity(key, response);
         verify(idempotencyRecordRepository).save(idempotencyRecord);
     }
